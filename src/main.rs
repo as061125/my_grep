@@ -1,16 +1,17 @@
-use std::env;
-use grep_redo::{Config, search};
+use clap::Parser;
+use grep_redo::cli::Cli;
+use grep_redo::engine;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let cli = Cli::parse();
 
-    let config = Config::new(&args).unwrap_or_else(|err| {
-        eprintln!("参数错误: {err}");
-        std::process::exit(1);
-    });
-
-    if let Err(e) = search::run(config) {
-        eprintln!("读取错误: {e}");
-        std::process::exit(1);
+    // 配置 rayon 线程池
+    if cli.threads > 0 {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(cli.threads)
+            .build_global()
+            .unwrap();
     }
+
+    engine::run(&cli);
 }
