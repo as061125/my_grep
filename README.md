@@ -21,7 +21,7 @@
 | 递归搜索 | `-r` | ✅ |
 | 文件过滤 | `--include` / `--exclude` / `--exclude-dir` | ✅ |
 | 通配符 | `*` `?` `[]` | ✅ |
-| 多文件 | `grep pattern file1 file2` | ✅ |
+| 多文件 | `grep_redo pattern file1 file2` | ✅ |
 | 多编码输入 | `--input-encoding` (UTF-8/16, GBK, Big5…) | ✅ |
 | 多编码输出 | `--output-encoding` | ✅ |
 | 自动 BOM 检测 | `--input-encoding auto` | ✅ |
@@ -33,10 +33,46 @@
 ## 安装
 
 ```bash
-git clone https://github.com/yourname/grep_redo
-cd grep_redo
+git clone https://github.com/as061125/my_grep
+cd my_grep
 cargo build --release
-./target/release/grep_redo --help
+```
+
+编译产物在 `./target/release/grep_redo.exe`（Windows）或 `./target/release/grep_redo`（Linux/macOS）。
+
+### 添加到 PATH
+
+编译后只需做一次，之后可以直接在终端敲 `grep_redo`。
+
+#### Linux / macOS
+
+```bash
+# 方法一：复制到系统路径（推荐）
+sudo cp ./target/release/grep_redo /usr/local/bin/
+
+# 方法二：添加到用户 PATH（编辑 ~/.bashrc 或 ~/.zshrc）
+echo 'export PATH="$PATH:'$(pwd)'/target/release"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### Windows
+
+```powershell
+# 方法一：复制到系统路径（管理员 PowerShell）
+Copy-Item .\target\release\grep_redo.exe C:\Windows\System32\
+
+# 方法二：添加到用户 PATH
+$userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+$newPath = "$userPath;$((Get-Item .\target\release\).FullName)"
+[Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+# 重启终端后生效
+```
+
+添加完成后验证：
+
+```bash
+grep_redo --version   # 应输出版本号
+grep_redo --help      # 应显示帮助信息
 ```
 
 ## 使用示例
@@ -45,80 +81,86 @@ cargo build --release
 
 ```bash
 # 精确匹配
-cargo run -- "hello" file.txt
+grep_redo "hello" file.txt
 
 # 忽略大小写
-cargo run -- -i "hello" file.txt
+grep_redo -i "hello" file.txt
 
 # 显示行号
-cargo run -- -n "hello" file.txt
+grep_redo -n "hello" file.txt
 
 # 正则表达式
-cargo run -- -E "h[a-z]+o" file.txt
+grep_redo -E "h[a-z]+o" file.txt
 
 # 反向匹配（显示不包含的行）
-cargo run -- -v "hello" file.txt
+grep_redo -v "hello" file.txt
 ```
 
 ### 多文件和递归
 
 ```bash
 # 搜索多个文件
-cargo run -- "hello" file1.txt file2.txt
+grep_redo "hello" file1.txt file2.txt
 
 # 通配符
-cargo run -- "hello" *.txt
+grep_redo "hello" *.txt
 
 # 递归搜索目录
-cargo run -- -r "hello" .
+grep_redo -r "hello" .
 
 # 递归 + 文件类型过滤
-cargo run -- -r "hello" --include "*.rs" .
+grep_redo -r "hello" --include "*.rs" .
 
 # 递归 + 排除目录
-cargo run -- -r "hello" --exclude-dir target .
+grep_redo -r "hello" --exclude-dir target .
 ```
 
 ### 上下文
 
 ```bash
 # 前后各 2 行
-cargo run -- -C 2 "error" log.txt
+grep_redo -C 2 "error" log.txt
 
 # 匹配后 3 行
-cargo run -- -A 3 "error" log.txt
+grep_redo -A 3 "error" log.txt
 
 # 匹配前 1 行
-cargo run -- -B 1 "error" log.txt
+grep_redo -B 1 "error" log.txt
 ```
 
 ### 编码支持
 
 ```bash
 # 自动检测 BOM（UTF-8 / UTF-16）
-cargo run -- "关键词" file.txt
+grep_redo "关键词" file.txt
 
 # 指定 GBK 输入
-cargo run -- "关键词" file.txt --input-encoding gbk
+grep_redo "关键词" file.txt --input-encoding gbk
 
 # 输出为 GBK（解决终端乱码）
-cargo run -- "关键词" file.txt --input-encoding gbk --output-encoding gbk
+grep_redo "关键词" file.txt --input-encoding gbk --output-encoding gbk
 ```
 
 ### 其他
 
 ```bash
 # 仅显示匹配的文件名
-cargo run -- -l "hello" *.txt
+grep_redo -l "hello" *.txt
 
 # 计数
-cargo run -- -c "hello" file.txt
+grep_redo -c "hello" file.txt
 
 # 静默模式（仅通过退出码判断）
-cargo run -- -q "hello" file.txt && echo "有匹配"
+grep_redo -q "hello" file.txt && echo "有匹配"
 
 # 指定线程数
-cargo run -- -j 4 -r "hello" .
+grep_redo -j 4 -r "hello" .
+
+# 全文高亮
+grep_redo --all "hello" file.txt
+
+# 管道输入
+cat file.txt | grep_redo "hello"
 ```
 
 ## 架构
