@@ -302,7 +302,7 @@ fn run_memory(cli: &Cli) {
         std::process::exit(1);
     });
 
-    let results = matcher::search(cli);
+    let results = matcher::search_from(cli, &sources);
 
     let before = cli.before_context.unwrap_or_else(|| cli.context.unwrap_or(0));
     let after = cli.after_context.unwrap_or_else(|| cli.context.unwrap_or(0));

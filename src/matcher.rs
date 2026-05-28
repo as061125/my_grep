@@ -354,15 +354,20 @@ where
 // 搜索入口（全量内存版，用于 -v / --all / 上下文）
 // ============================================================
 
-/// 搜索匹配行（或反向匹配），返回 (来源, 行号, 内容)
+/// 搜索匹配行（或反向匹配），返回 (来源, 行号, 内容）
+/// 内部调用 get_content 读取数据
 pub fn search(cli: &Cli) -> Vec<(String, u32, String)> {
-    let regex = compile_regex(cli).unwrap_or_else(|e| {
-        eprintln!("正则错误: {e}");
-        std::process::exit(1);
-    });
-
     let sources = get_content(cli).unwrap_or_else(|e| {
         eprintln!("读取错误: {e}");
+        std::process::exit(1);
+    });
+    search_from(cli, &sources)
+}
+
+/// 在已有的 sources 上执行搜索，不重复读取
+pub fn search_from(cli: &Cli, sources: &[(String, String)]) -> Vec<(String, u32, String)> {
+    let regex = compile_regex(cli).unwrap_or_else(|e| {
+        eprintln!("正则错误: {e}");
         std::process::exit(1);
     });
 
