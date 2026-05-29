@@ -120,6 +120,10 @@ pub struct Cli {
     #[arg(short = 'a', long = "text", conflicts_with = "all")]
     pub text: bool,
 
+    /// 搜索文件名而非文件内容
+    #[arg(short = 'N', long = "name")]
+    pub name: bool,
+
     /// 并行线程数（0 = 自动使用所有 CPU 核心）
     #[arg(short = 'j', long = "threads", default_value = "0")]
     pub threads: usize,

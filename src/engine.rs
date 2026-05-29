@@ -324,6 +324,11 @@ fn run_memory(cli: &Cli) {
 
 /// 主入口
 pub fn run(cli: &Cli) {
+    if cli.name {
+        run_names(cli);
+        return;
+    }
+
     let need_full = cli.invert_match
         || cli.all
         || cli.files_with_matches
@@ -336,5 +341,19 @@ pub fn run(cli: &Cli) {
         run_memory(cli);
     } else {
         run_streaming(cli);
+    }
+}
+
+fn run_names(cli: &Cli) {
+    let paths = matcher::search_names(cli);
+    if paths.is_empty() {
+        std::process::exit(1);
+    }
+    for path in &paths {
+        let bytes = crate::encoding::encode_text(path, &cli.output_encoding);
+        let mut stdout = std::io::stdout().lock();
+        let _ = stdout.write_all(&bytes);
+        let _ = stdout.write_all(b"
+");
     }
 }

@@ -208,7 +208,7 @@ fn is_word_boundary(line: &str, pos: usize) -> bool {
 // ============================================================
 
 /// 收集一个文件参数展开后的所有实际文件路径
-fn collect_paths_from_arg(file: &str, cli: &Cli) -> io::Result<Vec<String>> {
+pub fn collect_paths_from_arg(file: &str, cli: &Cli) -> io::Result<Vec<String>> {
     let mut paths = Vec::new();
 
     if ['*', '[', '?'].iter().any(|&c| file.contains(c)) {
@@ -353,6 +353,64 @@ where
 // ============================================================
 // 搜索入口（全量内存版，用于 -v / --all / 上下文）
 // ============================================================
+
+/// 搜索文件名，返回匹配的文件路径列表
+pub fn search_names(cli: &Cli) -> Vec<String> {
+    let target = &cli.target;
+    let mut all_paths: Vec<String> = Vec::new();
+
+    if !cli.filenames.is_empty() {
+        for file in &cli.filenames {
+            if let Ok(paths) = collect_paths_from_arg(file, cli) {
+                all_paths.extend(paths);
+            }
+        }
+    } else {
+        // 无文件参数时搜索当前目录
+        let root = ".
+"   .trim();
+        if cli.recursive {
+            if let Ok(paths) = walk_dir_recursive(root, cli) {
+                all_paths.extend(paths);
+            }
+        } else if let Ok(entries) = std::fs::read_dir(root) {
+            for entry in entries.flatten() {
+                if entry.file_type().map(|t| t.is_file()).unwrap_or(false) {
+                    if let Ok(canon) = entry.path().canonicalize() {
+                        let path = canon.to_string_lossy().to_string();
+                        all_paths.push(path);
+                    }
+                }
+            }
+        }
+    }
+
+    // 基于 target + flag 过滤路径
+    let use_regex = cli.extended_regexp;
+    let re = if use_regex {
+        compile_regex(cli).unwrap_or_else(|e| {
+            eprintln!("正则错误: {e}");
+            std::process::exit(1);
+        })
+    } else {
+        None
+    };
+
+    all_paths.into_iter().filter(|path| {
+        let name = std::path::Path::new(path)
+            .file_name()
+            .map(|n| n.to_string_lossy())
+            .unwrap_or_default();
+
+        if let Some(ref regex) = re {
+            regex.is_match(&name)
+        } else if cli.ignore_case {
+            name.to_lowercase().contains(&target.to_lowercase())
+        } else {
+            name.contains(target)
+        }
+    }).collect()
+}
 
 /// 搜索匹配行（或反向匹配），返回 (来源, 行号, 内容）
 /// 内部调用 get_content 读取数据
