@@ -324,7 +324,7 @@ fn run_memory(cli: &Cli) {
 
 /// 主入口
 pub fn run(cli: &Cli) {
-    if cli.name {
+    if cli.name || cli.fuzzy {
         run_names(cli);
         return;
     }

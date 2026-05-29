@@ -354,6 +354,29 @@ where
 // 搜索入口（全量内存版，用于 -v / --all / 上下文）
 // ============================================================
 
+/// 模糊搜索文件名（fzf 风格），按匹配度排序
+fn fuzzy_search_names(paths: Vec<String>, target: &str) -> Vec<String> {
+    use nucleo::Matcher;
+    let mut matcher = Matcher::new(nucleo::Config::DEFAULT);
+    let pattern: Vec<char> = target.chars().collect();
+    let mut scored: Vec<(i32, String)> = Vec::new();
+
+    for path in paths {
+        let name = std::path::Path::new(&path)
+            .file_name()
+            .map(|n| n.to_string_lossy())
+            .unwrap_or_default();
+        let name_chars: Vec<char> = name.chars().collect();
+        let mut indices = Vec::new();
+        if let Some(score) = matcher.fuzzy_indices(nucleo::Utf32Str::Unicode(&name_chars), nucleo::Utf32Str::Unicode(&pattern), &mut indices) {
+            scored.push((-(score as i32), path));
+        }
+    }
+
+    scored.sort_by(|a, b| a.0.cmp(&b.0));
+    scored.into_iter().map(|(_, p)| p).collect()
+}
+
 /// 搜索文件名，返回匹配的文件路径列表
 pub fn search_names(cli: &Cli) -> Vec<String> {
     let target = &cli.target;
@@ -383,6 +406,11 @@ pub fn search_names(cli: &Cli) -> Vec<String> {
                 }
             }
         }
+    }
+
+    // 模糊搜索
+    if cli.fuzzy {
+        return fuzzy_search_names(all_paths, target);
     }
 
     // 基于 target + flag 过滤路径

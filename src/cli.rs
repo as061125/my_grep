@@ -124,6 +124,10 @@ pub struct Cli {
     #[arg(short = 'N', long = "name")]
     pub name: bool,
 
+    /// 模糊搜索文件名（fzf 风格）
+    #[arg(short = 'z', long = "fuzzy", conflicts_with = "extended_regexp")]
+    pub fuzzy: bool,
+
     /// 并行线程数（0 = 自动使用所有 CPU 核心）
     #[arg(short = 'j', long = "threads", default_value = "0")]
     pub threads: usize,
